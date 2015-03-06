@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component xmlns="http:/opensource-socialnetwork.org/v/1.0">
+    <com_name>FakeUsers</com_name>
+    <com_author>Arsalan Shah</com_author>
+    <com_description>Allow site admin to generate fake contents.</com_description>
+    <com_license>GPL V2</com_license>
+	<com_author_url>http://www.informatikon.com/</com_author_url>
+    <com_licence_url>http://opensource-socialnetwork.org/licence/</com_licence_url>
+    <com_version>1.0</com_version>
+</component>
