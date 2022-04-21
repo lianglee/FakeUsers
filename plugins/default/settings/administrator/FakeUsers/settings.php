@@ -9,17 +9,16 @@
  * @link      http://www.opensource-socialnetwork.org/licence
  */
  
-echo ossn_view_form('administrator/settings', array(
+echo ossn_view_form('add', array(
     'action' => ossn_site_url() . 'action/fake/users/generate',
     'component' => 'FakeUsers',
     'class' => 'ossn-admin-form'	
 ), false);
 
 $users = new FakeUsers;
-$pagination = new OssnPagination;
-$pagination->setItem($users->getFakeUsers());
+$list = $users->getFakeUsers();
+$count = $users->getFakeUsers(true);
 ?>
-<hr />
 <div class="top-controls top-controls-users-page">
     <a href="<?php echo ossn_site_url("action/fake/users/delete", true); ?>"
        class="ossn-admin-button button-red">Delete All Fake Users</a>
@@ -35,7 +34,7 @@ $pagination->setItem($users->getFakeUsers());
         <td><?php echo ossn_print('edit'); ?></td>
         <td><?php echo ossn_print('delete'); ?></td>
     </tr>
-    <?php foreach ($pagination->getItem() as $user) {
+    <?php foreach ($list as $user) {
         $user = ossn_user_by_guid($user->guid);
 		$lastlogin = '';
 		if(!empty($user->last_login)){
@@ -62,4 +61,4 @@ $pagination->setItem($users->getFakeUsers());
     <?php } ?>
     </tbody>
 </table>
-<?php echo $pagination->pagination(); ?>
+<?php echo ossn_view_pagination($count); ?>

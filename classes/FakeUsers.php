@@ -12,31 +12,35 @@ class FakeUsers extends OssnUser {
 		/**
 		 * addImage
 		 *
-		 * Add image for user 
+		 * Add image for user
 		 * @Note: Don't call this method directly
-		 * 
+		 *
 		 * @param int $guid Valid user id
 		 *
 		 * @return bool;
 		 */
 		private function addImage($guid) {
-				
 				if(empty($guid)) {
 						return false;
 				}
-				$profile = new OssnProfile;
-				$file    = new OssnFile;
-				
+				$profile = new OssnProfile();
+				$file    = new OssnFile();
+
 				$file->owner_guid = $guid;
 				$file->type       = 'user';
 				$file->subtype    = 'profile:photo';
 				$file->setFile('userphoto');
 				$file->setPath('profile/photo/');
-				
+				$file->setExtension(array(
+						'jpg',
+						'png',
+						'jpeg',
+						'gif',
+				));
+
 				if($file->addFile()) {
 						$resize = $file->getFiles();
 						$profile->addPhotoWallPost($file->owner_guid, $resize->{0}->guid);
-						
 						if(isset($resize->{0}->value)) {
 								$guid      = $guid;
 								$datadir   = ossn_get_userdata("user/{$guid}/{$resize->{0}->value}");
@@ -49,32 +53,41 @@ class FakeUsers extends OssnUser {
 										$resized = ossn_resize_image($datadir, $width, $height, true);
 										file_put_contents(ossn_get_userdata("user/{$guid}/profile/photo/{$size}_{$file_name}"), $resized);
 								}
-								
 						}
 						return true;
 				}
+				$u = ossn_user_by_guid($guid);
+				$u->deleteUser();
 				return false;
 		}
 		/**
 		 * AddFakeUsers
 		 *
 		 * Generate Fake Users
-		 * 
+		 *
 		 * @param int $count Number of users you want to add
 		 * @param string $password a default password for fake users
 		 *
 		 * @return bool;
 		 */
-		public function AddFakeUsers($count = 10, $password = '123456') {
-				if(empty($count)){ 
-					$count = 10;
+		public function AddFakeUsers($count = 10, $password = '123456789') {
+				if(empty($count)) {
+						$count = 10;
 				}
-				if(empty($password)){
-					$password = '123456';
+				if($count > 0) {
+						$count = $count - 1;
 				}
-				require_once(__FAKE_USERS__ . 'classes/Faker/autoload.php');
-				$faker = Faker\Factory::create();
-				for($i = 0; $i < $count; $i++) {
+				if(empty($password)) {
+						$password = '123456789';
+				}
+				require_once __FAKE_USERS__ . 'classes/Faker/autoload.php';
+				$faker   = Faker\Factory::create();
+				$i       = 0;
+				$userdir = ossn_get_userdata('tmp/fakeusers/');
+				if(!is_dir($userdir)) {
+						mkdir($userdir, 0755, true);
+				}
+				do {
 						$this->username   = $faker->userName;
 						$this->first_name = $faker->firstName;
 						$this->last_name  = $faker->lastName;
@@ -83,25 +96,30 @@ class FakeUsers extends OssnUser {
 						$this->gender     = 'male';
 						$this->birthdate  = date('d/m/Y');
 						$this->usertype   = 'normal';
-						
-						if($this->addUser()) {
-								
+						$this->validated  = true;
+
+						if($guid = $this->addUser()) {
+								$i++;
 								$this->subtype = 'fake_users';
 								$this->value   = $this->owner_guid;
 								$this->add();
-								
-								$image               = $faker->imageURL(300, 300);
+
+								$filename         = md5($guid) . '.jpg';
+								$image            = 'https://picsum.photos/300/300';
+								$downloaded_image = file_get_contents($image);
+								$tempname         = $userdir . $filename;
+								file_put_contents($tempname, $downloaded_image);
 								$_FILES['userphoto'] = array(
-										'name' => md5($image) . '.jpg',
-										'tmp_name' => $image,
-										'type' => 'image/jpeg',
-										'size' => strlen(file_get_contents($image)),
-										'error' => UPLOAD_ERR_OK
+										'name'     => $filename,
+										'tmp_name' => $tempname,
+										'type'     => 'image/jpeg',
+										'size'     => strlen($downloaded_image),
+										'error'    => UPLOAD_ERR_OK,
 								);
-								
 								$this->addImage($this->owner_guid);
+								unlink($tempname);
 						}
-				}
+				} while($i <= $count);
 				return false;
 		}
 		/**
@@ -112,24 +130,20 @@ class FakeUsers extends OssnUser {
 		 *
 		 * @return false|array;
 		 */
-		public function getFakeUsers() {
-				$params['from']   = 'ossn_entities as e';
-				$params['params'] = array(
-						'u.guid, u.username, u.first_name, u.last_name, u.email, u.last_login, u.last_activity, u.type'
+		public function getFakeUsers($count = false) {
+				$options = array(
+						'entities_pairs' => array(
+								array(
+										'name'   => 'fake_users',
+										'value'  => false,
+										'wheres' => 'emd0.value <> ""',
+								),
+						),
 				);
-				$params['joins']  = "JOIN ossn_entities_metadata as emd ON e.guid=emd.guid JOIN ossn_users as u ON emd.value=u.guid";
-				$params['wheres'] = array(
-						"e.subtype='fake_users'"
-				);
-				$users            = $this->select($params, true);
-				if($users) {
-						foreach($users as $user) {
-								$fakeuser    = get_object_vars($user);
-								$fakeusers[] = arrayObject($fakeuser, 'OssnUser');
-						}
-						return $fakeusers;
+				if($count) {
+						$options['count'] = true;
 				}
-				return false;
+				return $this->searchUsers($options);
 		}
 		/**
 		 * deleteFakeUsers
