@@ -4,4 +4,4 @@
  <label> Default Password</label>
  <input type="text" name="password" value="123456789" />
  
- <input type="submit" class="ossn-admin-button button-dark-blue" value="Generate"/>
+ <input type="submit" class="btn btn-sm btn-success" value="Generate"/>

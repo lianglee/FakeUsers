@@ -23,7 +23,7 @@ $count = $users->getFakeUsers(true);
     <a href="<?php echo ossn_site_url("action/fake/users/delete", true); ?>"
        class="ossn-admin-button button-red">Delete All Fake Users</a>
 </div>
-<table class="table ossn-users-list">
+<table class="table table-striped">
     <tbody>
     <tr class="table-titles">
         <td><?php echo ossn_print('name'); ?></td>
@@ -43,8 +43,7 @@ $count = $users->getFakeUsers(true);
         ?>
         <tr>
             <td>
-                <div class="image"><img
-                        src="<?php echo ossn_site_url(); ?>avatar/<?php echo $user->username; ?>/smaller"/></div>
+                <div class="image"><img src="<?php echo $user->iconURL()->smaller;?>"/></div>
                 <div class="name"
                      style="margin-left:39px;margin-top: -39px;min-height: 30px;"><?php echo strl($user->fullname, 20); ?></div>
             </td>

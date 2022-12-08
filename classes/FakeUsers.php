@@ -10,6 +10,23 @@
  */
 class FakeUsers extends OssnUser {
 		/**
+		 * Get random image
+		 *
+		 * @return string
+		 */
+		private function getRandomImage() {
+				$curl = curl_init();
+				curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'GET');
+				curl_setopt($curl, CURLOPT_URL, 'https://picsum.photos/300/300');
+				curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+				curl_setopt($curl, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1');
+				curl_setopt($curl, CURLOPT_CAINFO, ossn_route()->www . 'vendors/cacert.pem');
+				curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+				$result = curl_exec($curl);
+				curl_close($curl);
+				return $result;
+		}
+		/**
 		 * addImage
 		 *
 		 * Add image for user
@@ -37,8 +54,9 @@ class FakeUsers extends OssnUser {
 						'jpeg',
 						'gif',
 				));
+				$u = ossn_user_by_guid($guid);
 
-				if($file->addFile()) {
+				if($fileguid = $file->addFile()) {
 						$resize = $file->getFiles();
 						$profile->addPhotoWallPost($file->owner_guid, $resize->{0}->guid);
 						if(isset($resize->{0}->value)) {
@@ -54,9 +72,14 @@ class FakeUsers extends OssnUser {
 										file_put_contents(ossn_get_userdata("user/{$guid}/profile/photo/{$size}_{$file_name}"), $resized);
 								}
 						}
+						//update user icon time, this time has nothing to do with photo entity time
+						$u->data->icon_time = time();
+
+						//Default profile picture #1647
+						$u->data->icon_guid = $fileguid;
+						$u->save();
 						return true;
 				}
-				$u = ossn_user_by_guid($guid);
 				$u->deleteUser();
 				return false;
 		}
@@ -81,7 +104,8 @@ class FakeUsers extends OssnUser {
 						$password = '123456789';
 				}
 				require_once __FAKE_USERS__ . 'classes/Faker/autoload.php';
-				$faker   = Faker\Factory::create();
+				$faker = Faker\Factory::create();
+
 				$i       = 0;
 				$userdir = ossn_get_userdata('tmp/fakeusers/');
 				if(!is_dir($userdir)) {
@@ -105,8 +129,7 @@ class FakeUsers extends OssnUser {
 								$this->add();
 
 								$filename         = md5($guid) . '.jpg';
-								$image            = 'https://picsum.photos/300/300';
-								$downloaded_image = file_get_contents($image);
+								$downloaded_image = $this->getRandomImage();
 								$tempname         = $userdir . $filename;
 								file_put_contents($tempname, $downloaded_image);
 								$_FILES['userphoto'] = array(
